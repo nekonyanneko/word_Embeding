@@ -91,4 +91,6 @@ ENV/
 .DS_Store
 *.model
 model.*
+skip_model.*
+cbow_model.*
 file*
