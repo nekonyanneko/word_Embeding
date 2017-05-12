@@ -46,6 +46,15 @@ def createEmbeding(model, TXT_DATA_PATH):
 		data.append(line_data)
 	return data
 
+def createDataForCnn(uc_id,data):
+	cnnData = {}
+	if len(uc_id) == len(data):
+		for index,ID in enumerate(uc_id):
+			cnnData[uc_id[index]] = data[index]
+	else:
+		print 'no match data length'
+	return cnnData
+
 def main():
 	model = createModel(ALGORISM, TRAIN_LOAD, INPUT_TXT, OUTPUT_PATH)
 	data = createEmbeding(model, TXT_DATA_PATH)
@@ -53,6 +62,10 @@ def main():
 	print 'sentence:', len(data)
 	print '   words:', len(data[1])
 	print 'embeding:', len(data[1][1])
+	uc_id = []
+	for index in range(len(data)):
+		uc_id.append(str(index))
+	cnnData = createDataForCnn(uc_id,data)	
 
 if __name__ == "__main__":
 	main()
