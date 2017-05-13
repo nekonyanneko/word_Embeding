@@ -3,11 +3,9 @@ from __future__ import print_function
 import keras
 import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
-from keras.models import Sequential
-from keras.layers import Input, Embedding, LSTM, Dense, merge
-from keras.models import Model
-from keras.layers import Dense, Dropout, Activation, Flatten
-from keras.layers import Conv2D, MaxPooling2D
+from keras.models import Sequential, Model
+from keras.layers import Input, Embedding, LSTM, Dense, merge, Activation, Flatten, Dropout, Conv2D, MaxPooling2D
+from keras.models import model_from_json
 #from keras.utils.visualize_util import plot
 #import matplotlib.pyplot as plt
 import fasttext as ft
@@ -30,7 +28,7 @@ TRAIN_LOAD = 'LOAD' #'TRAIN'or'LOAD'
 ########
 batch_size        = 3
 num_classes       = 9
-epochs            = 1
+epochs            = 14000
 data_augmentation = True
 result_dir        = './'
 
@@ -113,56 +111,47 @@ def createModelCNN(x_train,num_classes):
 	# CNN network modeling
 	main_input = Input(shape=(100,300,1), dtype='float64', name='main_input')
 	
-	conv_1 = Conv2D(120, (3, 50), padding='same', activation='relu')(main_input)
-	pool_1 = MaxPooling2D((2, 40), strides=(1, 1), padding='same')(conv_1)
+	conv_1 = Conv2D(32, (3, 50), init='he_normal')(main_input)
+	actv_1 = Activation('relu')(conv_1)
+	pool_1 = MaxPooling2D((2, 2), strides=(1, 1), padding='same')(actv_1)
+	drop_1 = Dropout(0.25)(pool_1)
+        conv_1 = Conv2D(64, (4, 50), init='he_normal')(drop_1)
+        actv_1 = Activation('relu')(conv_1)
+        pool_1 = MaxPooling2D((2, 2), strides=(2, 2), padding='same')(actv_1)
+        drop_1 = Dropout(0.25)(pool_1)
+        conv_1 = Conv2D(32, (5, 50), init='he_normal')(drop_1)
+        actv_1 = Activation('relu')(conv_1)
+        pool_1 = MaxPooling2D((2, 2), strides=(1, 1), padding='same')(actv_1)
+        drop_1 = Dropout(0.25)(pool_1)
+	flatten_1 = Flatten()(drop_1)
 	
-	conv_2 = Conv2D(120, (4, 50), padding='same', activation='relu')(main_input)
-        pool_2 = MaxPooling2D((2, 40), strides=(1, 1), padding='same')(conv_2)
+	conv_2 = Conv2D(32, (4, 50), init='he_normal')(main_input)
+	actv_2 = Activation('relu')(conv_2)
+        pool_2 = MaxPooling2D((2, 2), strides=(1, 1), padding='same')(conv_2)
+	drop_2 = Dropout(0.25)(pool_2)
+        conv_2 = Conv2D(64, (5, 50), init='he_normal')(drop_2)
+        actv_2 = Activation('relu')(conv_2)
+        pool_2 = MaxPooling2D((2, 2), strides=(2, 2), padding='same')(actv_2)
+        drop_2 = Dropout(0.25)(pool_2)
+	flatten_2 = Flatten()(drop_2)
 	
-	conv_3 = Conv2D(120, (5, 50), padding='same', activation='relu')(main_input)
-        pool_3 = MaxPooling2D((2, 40), strides=(1, 1), padding='same')(conv_3)
+	conv_3 = Conv2D(32, (5, 50), init='he_normal')(main_input)
+	actv_3 = Activation('relu')(conv_3)
+        pool_3 = MaxPooling2D((2, 2), strides=(1, 1), padding='same')(conv_3)
+	drop_3 = Dropout(0.25)(pool_3)
+	flatten_3 = Flatten()(drop_3)
 	
-	output = merge([pool_1, pool_2, pool_3], mode='concat', concat_axis=1)
-	flatten = Flatten()(output)
-	dence_1 = Dense(512, activation='relu')(flatten)
-	out = Dense(1, activation='softmax')(dence_1)
+	output = merge([flatten_1, flatten_2, flatten_3], mode='concat', concat_axis=1)
+	dence_1 = Dense(2, init='he_normal')(output)
+	actv_4  = Activation('relu')(dence_1)
+	dence_2 = Dense(64, init='he_normal')(actv_4)
+	actv_5  = Activation('relu')(dence_2)
+	drop_4  = Dropout(0.5)(actv_5)
+	dence_3 = Dense(9, init='he_normal')(drop_4)
+	out     = Activation('softmax')(dence_3)
 	#input,output is [input1,....,inputN]
-	model = Model(input=[main_input], output=[out])
+	model = Model(inputs=[main_input], outputs=[out])
 	
-	'''
-	model_1 = Sequential()
-	model_1.add(Conv2D(120, (3, 50), padding='same', input_shape=(100,300,1)))
-	model_1.add(Activation('relu'))
-	model_1.add(MaxPooling2D(pool_size=(2, 40)))
-	#model_1.add(Dropout(0.25))
-	model_1.add(Flatten())
-	
-	model_2 = Sequential()
-        model_2.add(Conv2D(120, (4, 50), padding='same', input_shape=(100,300,1)))
-        model_2.add(Activation('relu'))
-        model_2.add(MaxPooling2D(pool_size=(2, 40)))
-        #model_2.add(Dropout(0.25))
-	model_2.add(Flatten())
-	
-	model_3 = Sequential()
-        model_3.add(Conv2D(120, (5, 50), padding='same', input_shape=(100,300,1)))
-        model_3.add(Activation('relu'))
-        model_3.add(MaxPooling2D(pool_size=(2, 40)))
-	#model_3.add(Dropout(0.25))
-	model_3.add(Flatten())
-	
-	merged = Merge([model_1, model_2, model_3], mode='concat')
-	
-	# all conection layer
-	model = Sequential()
-	model.add(merged)
-	#model.add(Flatten())
-	model.add(Dense(512))
-	model.add(Activation('relu'))
-	model.add(Dropout(0.5))
-	model.add(Dense(num_classes))
-	model.add(Activation('softmax'))
-	'''
 	return model
 
 if __name__ == "__main__":
@@ -212,14 +201,17 @@ if __name__ == "__main__":
 		json_file.write(model_json)
 	model.save_weights(os.path.join(result_dir, 'model.h5'))
 	
+	'''	
 	#loading model
-	model_file = os.path.join(result_dir, 'model.json')
+	model_file  = os.path.join(result_dir, 'model.json')
 	weight_file = os.path.join(result_dir, 'model.h5')
 	
 	with open(model_file, 'r') as fp:
 		model = model_from_json(fp.read())
 	model.load_weights(weight_file)
+	model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['accuracy'])
 	model.summary()
+	'''	
 	
 	# evaluate
 	loss, acc = model.evaluate(x_test, y_test, verbose=0)
