@@ -6,6 +6,7 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential, Model
 from keras.layers import Input, Embedding, LSTM, Dense, merge, Activation, Flatten, Dropout, Conv2D, MaxPooling2D
 from keras.models import model_from_json
+from keras.optimizers import Adam
 #from keras.utils.visualize_util import plot
 #import matplotlib.pyplot as plt
 import fasttext as ft
@@ -28,7 +29,7 @@ TRAIN_LOAD = 'LOAD' #'TRAIN'or'LOAD'
 ########
 batch_size        = 3
 num_classes       = 9
-epochs            = 14000
+epochs            = 1
 data_augmentation = True
 result_dir        = './'
 
@@ -109,7 +110,7 @@ def fasttext_main():
 ############
 def createModelCNN(x_train,num_classes):
 	# CNN network modeling
-	main_input = Input(shape=(100,300,1), dtype='float64', name='main_input')
+	main_input = Input(shape=(100,300,1), dtype='float32', name='main_input')
 	
 	conv_1 = Conv2D(32, (3, 50), init='he_normal')(main_input)
 	actv_1 = Activation('relu')(conv_1)
@@ -180,7 +181,8 @@ if __name__ == "__main__":
 	
 	model = createModelCNN(x_train,num_classes)
 	
-	model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['accuracy'])
+	adam = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.)
+	model.compile(loss='categorical_crossentropy',optimizer=adam,metrics=['accuracy'])
 	
 	# model summary
 	model.summary()
@@ -214,7 +216,9 @@ if __name__ == "__main__":
 	'''	
 	
 	# evaluate
-	loss, acc = model.evaluate(x_test, y_test, verbose=0)
+	loss, acc = model.evaluate(x_test, y_test, verbose=1)
 	print('Test loss:', loss)
 	print('Test acc:', acc)
+	
+	print(model.predict_on_batch(x_test))
 
